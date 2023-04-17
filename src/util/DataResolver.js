@@ -110,7 +110,7 @@ class DataResolver extends null {
     if (Buffer.isBuffer(resource) || resource instanceof stream.Readable) return resource;
     if (typeof resource === 'string') {
       if (/^https?:\/\//.test(resource)) {
-        const res = await fetch(resource);
+        const res = await (fetch.default??fetch)(resource);
         return res.body;
       }
 

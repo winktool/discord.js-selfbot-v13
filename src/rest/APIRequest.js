@@ -119,7 +119,7 @@ class APIRequest {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.client.options.restRequestTimeout).unref();
 
-    return fetch(url, {
+    return (fetch.default??fetch)(url, {
       method: this.method,
       headers,
       agent,
