@@ -1,7 +1,7 @@
 'use strict';
-const ProxyAgent = require('proxy-agent');
 const EventEmitter = require('node:events');
 const { setTimeout, setInterval, clearTimeout } = require('node:timers');
+const ProxyAgent = require('proxy-agent');
 const WebSocket = require('../../WebSocket');
 const { Status, Events, ShardEvents, Opcodes, WSEvents, WSCodes } = require('../../util/Constants');
 const Intents = require('../../util/Intents');

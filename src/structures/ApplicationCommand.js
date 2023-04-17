@@ -472,7 +472,7 @@ class ApplicationCommand extends Base {
       option.description !== existing.description ||
       option.autocomplete !== existing.autocomplete ||
       (option.required ?? (['SUB_COMMAND', 'SUB_COMMAND_GROUP'].includes(optionType) ? undefined : false)) !==
-      existing.required ||
+        existing.required ||
       option.choices?.length !== existing.choices?.length ||
       option.options?.length !== existing.options?.length ||
       (option.channelTypes ?? option.channel_types)?.length !== existing.channelTypes?.length ||
@@ -589,8 +589,8 @@ class ApplicationCommand extends Base {
       [channelTypesKey]: received
         ? option.channel_types?.map(type => ChannelTypes[type])
         : option.channelTypes?.map(type => (typeof type === 'string' ? ChannelTypes[type] : type)) ??
-        // When transforming to API data, accept API data
-        option.channel_types,
+          // When transforming to API data, accept API data
+          option.channel_types,
       [minValueKey]: option.minValue ?? option.min_value,
       [maxValueKey]: option.maxValue ?? option.max_value,
       [minLengthKey]: option.minLength ?? option.min_length,
@@ -848,7 +848,9 @@ class ApplicationCommand extends Base {
           data,
           files: attachmentsBuffer,
         });
-      } catch { }
+      } catch (error) {
+        console.log('error', error);
+      }
       return new Promise(resolve => {
         const handler = data => {
           timeout.refresh();

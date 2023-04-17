@@ -1,5 +1,6 @@
 'use strict';
 const { setTimeout } = require('node:timers');
+const twoCaptcha = require('2captcha');
 const axios = require('axios');
 module.exports = class CaptchaSolver {
   constructor(service, key, defaultCaptchaSolver) {
@@ -17,10 +18,9 @@ module.exports = class CaptchaSolver {
       case '2captcha': {
         if (!key || typeof key !== 'string') throw new Error('2captcha key is not provided');
         try {
-          const lib = require('2captcha');
           this.service = '2captcha';
           this.key = key;
-          this.solver = new lib.Solver(key);
+          this.solver = new twoCaptcha.Solver(key);
           this.solve = (data, userAgent) =>
             new Promise((resolve, reject) => {
               const siteKey = data.captcha_sitekey;

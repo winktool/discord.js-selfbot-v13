@@ -42,7 +42,7 @@ const Options = require('../util/Options');
 const Permissions = require('../util/Permissions');
 const DiscordAuthWebsocket = require('../util/RemoteAuth');
 const Sweepers = require('../util/Sweepers');
-const { lazy, testImportModule } = require('../util/Util');
+const { lazy } = require('../util/Util');
 const Message = lazy(() => require('../structures/Message').Message);
 // Patch TLS fingerprint
 require('lodash.permutations');
