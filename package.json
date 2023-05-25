@@ -68,7 +68,7 @@
     "lodash.permutations": "^1.0.0",
     "murmurhash": "^2.0.1",
     "node-fetch": "^2.6.9",
-    "proxy-agent": "^5.0.0",
+    "proxy-agent": "^6.2.1",
     "safe-base64": "^2.0.1-0",
     "set-cookie-parser": "^2.6.0",
     "string-similarity": "^4.0.4",
