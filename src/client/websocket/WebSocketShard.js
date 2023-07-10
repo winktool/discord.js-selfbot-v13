@@ -699,10 +699,6 @@ class WebSocketShard extends EventEmitter {
 
     this.status = Status.IDENTIFYING;
 
-    // Clone the identify payload and assign the token and shard info
-    client.options.ws.properties = Object.assign(client.options.ws.properties, {
-      browser_user_agent: client.options.http.headers['User-Agent'],
-    });
     Object.keys(client.options.ws.properties)
       .filter(k => k.startsWith('$'))
       .forEach(k => {
@@ -751,7 +747,7 @@ class WebSocketShard extends EventEmitter {
   /**
    * Adds a packet to the queue to be sent to the gateway.
    * <warn>If you use this method, make sure you understand that you need to provide
-   * a full [Payload](https://discord.com/developers/docs/topics/gateway#commands-and-events-gateway-commands).
+   * a full [Payload](https://discord.com/developers/docs/topics/gateway-events#payload-structure).
    * Do not use this method if you don't know what you're doing.</warn>
    * @param {Object} data The full packet to send
    * @param {boolean} [important=false] If this packet should be added first in queue

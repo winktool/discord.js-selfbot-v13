@@ -28,7 +28,13 @@ class MessageReaction {
      * Whether the client has given this reaction
      * @type {boolean}
      */
-    this.me = data.me;
+    this.me = data.me || data.me_burst;
+
+    /**
+     * Super reaction
+     * @type {boolean}
+     */
+    this.isBurst = Boolean(data.me_burst || data.burst);
 
     /**
      * A manager of the users that have given this reaction
@@ -48,6 +54,40 @@ class MessageReaction {
        * @type {?number}
        */
       this.count ??= data.count;
+    }
+
+    if ('burst_count' in data) {
+      /**
+       * The number of people that have given the same super reaction
+       * @type {?number}
+       */
+      this.burstCount ??= data.burst_count;
+    }
+
+    if ('burst_colors' in data) {
+      /**
+       * HEX colors used for super reaction
+       * @type {string[]}
+       */
+      this.burstColors = data.burst_colors;
+    }
+
+    if ('count_details' in data) {
+      /**
+       * The reaction count details object contains information about super and normal reaction counts.
+       * @typedef {Object} ReactionCountDetailsData
+       * @property {number} burst Count of super reaction
+       * @property {number} normal Count of normal reaction
+       */
+
+      /**
+       * The reaction count details object contains information about super and normal reaction counts.
+       * @type {?ReactionCountDetailsData}
+       */
+      this.countDetails = {
+        burst: data.count_details.burst,
+        normal: data.count_details.normal,
+      };
     }
   }
 

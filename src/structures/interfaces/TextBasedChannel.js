@@ -76,12 +76,12 @@ class TextBasedChannel {
    * @property {boolean} [tts=false] Whether or not the message should be spoken aloud
    * @property {string} [nonce=''] The nonce for the message
    * @property {string} [content=''] The content for the message
-   * @property {WebEmbed[]|MessageEmbed[]|APIEmbed[]} [embeds] The embeds for the message
+   * @property {Array<(MessageEmbed|APIEmbed|WebEmbed)>} [embeds] The embeds for the message
    * (see [here](https://discord.com/developers/docs/resources/channel#embed-object) for more details)
    * @property {MessageMentionOptions} [allowedMentions] Which mentions should be parsed from the message content
    * (see [here](https://discord.com/developers/docs/resources/channel#allowed-mentions-object) for more details)
-   * @property {FileOptions[]|BufferResolvable[]|MessageAttachment[]} [files] Files to send with the message
-   * @property {MessageActionRow[]|MessageActionRowOptions[]} [components]
+   * @property {Array<(FileOptions|BufferResolvable|MessageAttachment[])>} [files] Files to send with the message
+   * @property {Array<(MessageActionRow|MessageActionRowOptions)>} [components]
    * Action rows containing interactive components for the message (buttons, select menus)
    * @property {MessageAttachment[]} [attachments] Attachments to send in the message
    * @property {boolean} [usingNewAttachmentAPI] Whether to use the new attachment API (`channels/:id/attachments`)
@@ -93,7 +93,7 @@ class TextBasedChannel {
    * @property {ReplyOptions} [reply] The options for replying to a message
    * @property {StickerResolvable[]} [stickers=[]] Stickers to send in the message
    * @property {MessageFlags} [flags] Which flags to set for the message.
-   * Only `SUPPRESS_EMBEDS` and `SUPPRESS_NOTIFICATIONS` can be set.
+   * Only `SUPPRESS_EMBEDS`, `SUPPRESS_NOTIFICATIONS` and `IS_VOICE_MESSAGE` can be set.
    */
 
   /**
@@ -187,6 +187,9 @@ class TextBasedChannel {
           id: attachment.id,
           filename: files[attachment.id].name,
           uploaded_filename: attachment.upload_filename,
+          description: files[attachment.id].description,
+          duration_secs: files[attachment.id].duration_secs,
+          waveform: files[attachment.id].waveform,
         };
       });
       const attachmentsData = await Promise.all(requestPromises);
@@ -447,12 +450,12 @@ class TextBasedChannel {
    * @returns {Promise<InteractionResponse>}
    * @example
    * // Send a basic slash
-   * channel.sendSlash('botid', 'ping)
+   * channel.sendSlash('botid', 'ping')
    *   .then(console.log)
    *   .catch(console.error);
    * @example
    * // Send a remote file
-   * channel.send('botid', 'emoji upload', 'https://cdn.discordapp.com/icons/222078108977594368/6e1019b3179d71046e463a75915e7244.png?size=2048', 'test')
+   * channel.sendSlash('botid', 'emoji upload', 'https://cdn.discordapp.com/icons/222078108977594368/6e1019b3179d71046e463a75915e7244.png?size=2048', 'test')
    *   .then(console.log)
    *   .catch(console.error);
    * @see {@link https://github.com/aiko-chan-ai/discord.js-selfbot-v13/blob/main/Document/SlashCommand.md}

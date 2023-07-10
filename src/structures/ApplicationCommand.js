@@ -843,14 +843,10 @@ class ApplicationCommand extends Base {
     const getAutoResponse = async (sendData, value) => {
       let nonce = SnowflakeUtil.generate();
       const data = getDataPost(sendData, nonce, true);
-      try {
-        await this.client.api.interactions.post({
-          data,
-          files: attachmentsBuffer,
-        });
-      } catch (error) {
-        console.log('error', error);
-      }
+      await this.client.api.interactions.post({
+        data,
+        files: attachmentsBuffer,
+      });
       return new Promise(resolve => {
         const handler = data => {
           timeout.refresh();
@@ -883,7 +879,8 @@ class ApplicationCommand extends Base {
       let nonce = SnowflakeUtil.generate();
       const data = getDataPost(optionsData, nonce);
       await this.client.api.interactions.post({
-        body: data,
+        data,
+        useFormDataPayloadJSON: true,
         files: attachmentsBuffer,
       });
       this.client._interactionCache.set(nonce, {
@@ -894,7 +891,7 @@ class ApplicationCommand extends Base {
       return new Promise((resolve, reject) => {
         const handler = data => {
           timeout.refresh();
-          if (data.metadata.nonce !== nonce) return;
+          if (data.metadata?.nonce !== nonce) return;
           clearTimeout(timeout);
           this.client.removeListener('interactionResponse', handler);
           this.client.decrementMaxListeners();
@@ -979,7 +976,8 @@ class ApplicationCommand extends Base {
       data.data.guild_id = message.guildId;
     }
     await this.client.api.interactions.post({
-      body: data,
+      data,
+      useFormDataPayloadJSON: true,
     });
     this.client._interactionCache.set(nonce, {
       channelId: message.channelId,
@@ -989,7 +987,7 @@ class ApplicationCommand extends Base {
     return new Promise((resolve, reject) => {
       const handler = data => {
         timeout.refresh();
-        if (data.metadata.nonce !== nonce) return;
+        if (data.metadata?.nonce !== nonce) return;
         clearTimeout(timeout);
         this.client.removeListener('interactionResponse', handler);
         this.client.decrementMaxListeners();

@@ -127,7 +127,7 @@ class Webhook {
    * @property {FileOptions[]|BufferResolvable[]|MessageAttachment[]} [files] See {@link BaseMessageOptions#files}
    * @property {MessageMentionOptions} [allowedMentions] See {@link BaseMessageOptions#allowedMentions}
    * @property {MessageAttachment[]} [attachments] Attachments to send with the message
-   * @property {MessageActionRow[]|MessageActionRowOptions[]} [components]
+   * @property {Array<(MessageActionRow|MessageActionRowOptions)>} [components]
    * Action rows containing interactive components for the message (buttons, select menus)
    * @property {Snowflake} [threadId] The id of the thread this message belongs to
    * <info>For interaction webhooks, this property is ignored</info>
@@ -188,9 +188,9 @@ class Webhook {
     let messagePayload;
 
     if (options instanceof MessagePayload) {
-      messagePayload = options.resolveData();
+      messagePayload = await options.resolveData();
     } else {
-      messagePayload = MessagePayload.create(this, options).resolveData();
+      messagePayload = await MessagePayload.create(this, options).resolveData();
     }
 
     const { data, files } = await messagePayload.resolveFiles();
@@ -199,6 +199,7 @@ class Webhook {
       files,
       query: { thread_id: messagePayload.options.threadId, wait: true },
       auth: false,
+      webhook: true,
     });
     return this.client.channels?.cache.get(d.channel_id)?.messages._add(d, false) ?? d;
   }
@@ -228,6 +229,7 @@ class Webhook {
       query: { wait: true },
       auth: false,
       data: body,
+      webhook: true,
     });
     return data.toString() === 'ok';
   }
@@ -256,6 +258,7 @@ class Webhook {
       data: { name, avatar, channel_id: channel },
       reason,
       auth: !this.token || Boolean(channel),
+      webhook: true,
     });
 
     this.name = data.name;
@@ -304,6 +307,7 @@ class Webhook {
           thread_id: cacheOrOptions.threadId,
         },
         auth: false,
+        webhook: true,
       });
     return this.client.channels?.cache.get(data.channel_id)?.messages._add(data, cacheOrOptions.cache) ?? data;
   }
@@ -320,10 +324,13 @@ class Webhook {
 
     let messagePayload;
 
-    if (options instanceof MessagePayload) messagePayload = options;
-    else messagePayload = MessagePayload.create(this, options);
+    if (options instanceof MessagePayload) {
+      messagePayload = await options.resolveData();
+    } else {
+      messagePayload = await MessagePayload.create(this, options).resolveData();
+    }
 
-    const { data, files } = await messagePayload.resolveData().resolveFiles();
+    const { data, files } = await messagePayload.resolveFiles();
 
     const d = await this.client.api
       .webhooks(this.id, this.token)
@@ -335,6 +342,7 @@ class Webhook {
           thread_id: messagePayload.options.threadId,
         },
         auth: false,
+        webhook: true,
       });
 
     const messageManager = this.client.channels?.cache.get(d.channel_id)?.messages;
@@ -354,7 +362,7 @@ class Webhook {
    * @returns {Promise<void>}
    */
   async delete(reason) {
-    await this.client.api.webhooks(this.id, this.token).delete({ reason, auth: !this.token });
+    await this.client.api.webhooks(this.id, this.token).delete({ reason, auth: !this.token, webhook: true });
   }
 
   /**
@@ -374,6 +382,7 @@ class Webhook {
           thread_id: threadId,
         },
         auth: false,
+        webhook: true,
       });
   }
 

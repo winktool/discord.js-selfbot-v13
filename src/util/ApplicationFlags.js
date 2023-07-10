@@ -27,6 +27,7 @@ class ApplicationFlags extends BitField {}
  * * `MANAGED_EMOJI`
  * * `GROUP_DM_CREATE`
  * * `RPC_PRIVATE_BETA`
+ * * `APPLICATION_AUTO_MODERATION_RULE_CREATE_BADGE`
  * * `ALLOW_ASSETS`
  * * `ALLOW_ACTIVITY_ACTION_SPECTATE`
  * * `ALLOW_ACTIVITY_ACTION_JOIN_REQUEST`
@@ -42,6 +43,7 @@ class ApplicationFlags extends BitField {}
  * * `EMBEDDED_FIRST_PARTY`
  * * `APPLICATION_COMMAND_BADGE`
  * * `ACTIVE`
+ * * `IFRAME_MODAL`
  * @type {Object}
  * @see {@link https://discord.com/developers/docs/resources/application#application-object-application-flags}
  * @see {@link https://flags.lewistehminerz.dev/}
@@ -49,8 +51,10 @@ class ApplicationFlags extends BitField {}
 ApplicationFlags.FLAGS = {
   EMBEDDED_RELEASED: 1 << 1,
   MANAGED_EMOJI: 1 << 2,
+  EMBEDDED_IAP: 1 << 3,
   GROUP_DM_CREATE: 1 << 4,
   RPC_PRIVATE_BETA: 1 << 5,
+  APPLICATION_AUTO_MODERATION_RULE_CREATE_BADGE: 1 << 6,
   ALLOW_ASSETS: 1 << 8,
   ALLOW_ACTIVITY_ACTION_SPECTATE: 1 << 9,
   ALLOW_ACTIVITY_ACTION_JOIN_REQUEST: 1 << 10,
@@ -66,6 +70,7 @@ ApplicationFlags.FLAGS = {
   EMBEDDED_FIRST_PARTY: 1 << 20,
   APPLICATION_COMMAND_BADGE: 1 << 23,
   ACTIVE: 1 << 24,
+  IFRAME_MODAL: 1 << 26,
 };
 
 module.exports = ApplicationFlags;

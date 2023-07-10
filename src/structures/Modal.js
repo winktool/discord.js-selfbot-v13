@@ -14,7 +14,7 @@ class Modal {
    * @typedef {Object} ModalOptions
    * @property {string} [customId] A unique string to be sent in the interaction when clicked
    * @property {string} [title] The title to be displayed on this modal
-   * @property {MessageActionRow[]|MessageActionRowOptions[]} [components]
+   * @property {Array<(MessageActionRow|MessageActionRowOptions)>} [components]
    * Action rows containing interactive components for the modal (text input components)
    */
 
@@ -247,7 +247,7 @@ class Modal {
     return new Promise((resolve, reject) => {
       const handler = data => {
         timeout.refresh();
-        if (data.metadata.nonce !== nonce) return;
+        if (data.metadata?.nonce !== nonce) return;
         clearTimeout(timeout);
         this.client.removeListener('interactionResponse', handler);
         this.client.decrementMaxListeners();

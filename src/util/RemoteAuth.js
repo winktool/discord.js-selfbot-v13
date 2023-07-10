@@ -107,15 +107,15 @@ class DiscordAuthWebsocket extends EventEmitter {
      * @returns {Promise<string>} Captcha token
      */
     // eslint-disable-next-line no-unused-vars
-    this.captchaHandler = data =>
+    this.captchaSolver = data =>
       new Promise((resolve, reject) => {
         reject(
           new Error(`
-Captcha Handler not found - Please set captchaHandler option
-Example captchaHandler function:
+Captcha Handler not found - Please set captchaSolver option
+Example captchaSolver function:
 
 new DiscordAuthWebsocket({
-  captchaHandler: async (data) => {
+  captchaSolver: async (data) => {
     const token = await hcaptchaSolver(data.captcha_sitekey, 'discord.com');
     return token;
   }
@@ -157,7 +157,7 @@ new DiscordAuthWebsocket({
       apiVersion: 9,
       userAgent: defaultUA,
       wsProperties: defaultClientOptions.ws.properties,
-      captchaHandler: () => new Error('Captcha Handler not found. Please set captchaHandler option.'),
+      captchaSolver: () => new Error('Captcha Handler not found. Please set captchaSolver option.'),
     };
     if (typeof options == 'object') {
       if (typeof options.debug == 'boolean') this.options.debug = options.debug;
@@ -168,7 +168,7 @@ new DiscordAuthWebsocket({
       if (typeof options.apiVersion == 'number') this.options.apiVersion = options.apiVersion;
       if (typeof options.userAgent == 'string') this.options.userAgent = options.userAgent;
       if (typeof options.wsProperties == 'object') this.options.wsProperties = options.wsProperties;
-      if (typeof options.captchaHandler == 'function') this.captchaHandler = options.captchaHandler;
+      if (typeof options.captchaSolver == 'function') this.captchaSolver = options.captchaSolver;
     }
   }
   _createWebSocket(url) {
@@ -424,7 +424,13 @@ new DiscordAuthWebsocket({
     this.callFindRealTokenCount++;
     if (!this.token) return this._throwError(new Error('Token is not created.'));
     if (!captchaSolveData && this.captchaCache) return this._throwError(new Error('Captcha is not solved.'));
-    if (this.callFindRealTokenCount > 5) return this._throwError(new Error('Failed to find real token.'));
+    if (this.callFindRealTokenCount > 5) {
+      return this._throwError(
+        new Error(
+          `Failed to find real token (${this.callFindRealTokenCount} times) ${this.captchaCache ? '[Captcha]' : ''}`,
+        ),
+      );
+    }
     this._logger('debug', 'Find real token...');
     const res = await axios
       .post(
@@ -454,6 +460,7 @@ new DiscordAuthWebsocket({
             'User-Agent': this.options.userAgent,
             Referer: 'https://discord.com/channels/@me',
             Connection: 'keep-alive',
+            Origin: 'https://discord.com',
           },
         },
       )
@@ -466,8 +473,9 @@ new DiscordAuthWebsocket({
         }
       });
     if (!res && this.captchaCache) {
-      this._logger('debug', 'Detect captcha... Try call captchaHandler()', this.captchaCache);
-      const token = await this.options.captchaHandler(this.captchaCache);
+      this._logger('default', 'Captcha is detected. Please solve the captcha to continue.');
+      this._logger('debug', 'Try call captchaSolver()', this.captchaCache);
+      const token = await this.options.captchaSolver(this.captchaCache);
       return this._findRealToken(token);
     }
     this.realToken = this._decryptPayload(res.data.encrypted_token).toString();

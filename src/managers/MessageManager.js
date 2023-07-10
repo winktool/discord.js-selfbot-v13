@@ -143,6 +143,9 @@ class MessageManager extends CachedManager {
           id: attachment.id,
           filename: files[attachment.id].name,
           uploaded_filename: attachment.upload_filename,
+          description: files[attachment.id].description,
+          duration_secs: files[attachment.id].duration_secs,
+          waveform: files[attachment.id].waveform,
         };
       });
       const attachmentsData = await Promise.all(requestPromises);
@@ -205,9 +208,10 @@ class MessageManager extends CachedManager {
    * Adds a reaction to a message, even if it's not cached.
    * @param {MessageResolvable} message The message to react to
    * @param {EmojiIdentifierResolvable} emoji The emoji to react with
+   * @param {boolean} [burst=false] Super Reactions (Discord Nitro only)
    * @returns {Promise<void>}
    */
-  async react(message, emoji) {
+  async react(message, emoji, burst = false) {
     message = this.resolveId(message);
     if (!message) throw new TypeError('INVALID_TYPE', 'message', 'MessageResolvable');
 
@@ -219,7 +223,15 @@ class MessageManager extends CachedManager {
       : encodeURIComponent(emoji.name);
 
     // eslint-disable-next-line newline-per-chained-call
-    await this.client.api.channels(this.channel.id).messages(message).reactions(emojiId, '@me').put();
+    await this.client.api
+      .channels(this.channel.id)
+      .messages(message)
+      .reactions(emojiId, '@me')
+      .put({
+        query: {
+          type: burst ? 1 : 0,
+        },
+      });
   }
 
   /**
@@ -239,37 +251,6 @@ class MessageManager extends CachedManager {
       const existing = this.cache.get(messageId);
       if (existing && !existing.partial) return existing;
     }
-
-    // Search API
-    /*
-    if (this.channel.guildId) {
-      const data = (
-        await this.client.api.guilds[this.channel.guild.id].messages.search.get({
-          query: {
-            channel_id: this.channel.id,
-            max_id: `${BigInt(messageId) + 1n}`,
-            min_id: `${BigInt(messageId) - 1n}`,
-            include_nsfw: true,
-          },
-        })
-      ).messages[0];
-      if (data) return this._add(data[0], cache);
-      else throw new Error('MESSAGE_ID_NOT_FOUND');
-    } else {
-      const data = (
-        await this.client.api.channels[this.channel.id].messages.search.get({
-          query: {
-            max_id: `${BigInt(messageId) + 1n}`,
-            min_id: `${BigInt(messageId) - 1n}`,
-          },
-        })
-      ).messages[0];
-      if (data) return this._add(data[0], cache);
-      else throw new Error('MESSAGE_ID_NOT_FOUND');
-    }
-    */
-
-    // Get API
     // https://discord.com/api/v9/channels/:id/messages?limit=50&around=:msgid
     return new Promise((resolve, reject) => {
       this._fetchMany({
@@ -292,17 +273,21 @@ class MessageManager extends CachedManager {
 
   /**
    * @typedef {object} MessageSearchOptions
-   * @property {Array<Snowflake>} [author] An array of author IDs to filter by
-   * @property {Array<Snowflake>} [mentions] An array of user IDs (mentioned) to filter by
+   * @property {Array<UserResolvable>} [authors] An array of author to filter by
+   * @property {Array<UserResolvable>} [mentions] An array of user (mentioned) to filter by
    * @property {string} [content] A messageContent to filter by
    * @property {Snowflake} [maxId] The maximum Message ID to filter by
    * @property {Snowflake} [minId] The minimum Message ID to filter by
-   * @property {Array<Snowflake>} [channel] An array of channel IDs to filter by
+   * @property {Array<TextChannelResolvable>} [channels] An array of channel to filter by
    * @property {boolean} [pinned] Whether to filter by pinned messages
    * @property {Array<string>} [has] Message has: `link`, `embed`, `file`, `video`, `image`, or `sound`
    * @property {boolean} [nsfw=false] Whether to filter by NSFW channels
    * @property {number} [offset=0] The number of messages to skip (for pagination, 25 results per page)
    * @property {number} [limit=25] The number of messages to fetch
+   * <info>The maximum limit allowed is 25.</info>
+   * @property {string} [sortBy] The order to sort by (`timestamp` or `relevance`)
+   * @property {string} [sortOrder] The order to return results in (`asc` or `desc`)
+   * <info>The default sort is <code>timestamp</code> in descending order <code>desc</code> (newest first).</info>
    */
 
   /**
@@ -317,26 +302,49 @@ class MessageManager extends CachedManager {
    * @returns {MessageSearchResult}
    */
   async search(options = {}) {
-    let { author, content, mentions, has, maxId, minId, channelId, pinned, nsfw, offset, limit } = Object.assign(
-      {
-        author: [],
-        content: '',
-        mentions: [],
-        has: [],
-        maxId: null,
-        minId: null,
-        channelId: [],
-        pinned: false,
-        nsfw: false,
-        offset: 0,
-        limit: 25,
-      },
-      options,
-    );
+    // eslint-disable-next-line no-unused-vars
+    let { authors, content, mentions, has, maxId, minId, channels, pinned, nsfw, offset, limit, sortBy, sortOrder } =
+      Object.assign(
+        {
+          authors: [],
+          content: '',
+          mentions: [],
+          has: [],
+          maxId: null,
+          minId: null,
+          channels: [],
+          pinned: false,
+          nsfw: false,
+          offset: 0,
+          limit: 25,
+          sortBy: 'timestamp',
+          sortOrder: 'desc',
+        },
+        options,
+      );
+    // Validate
+    if (authors.length > 0) authors = authors.map(u => this.client.users.resolveId(u));
+    if (mentions.length > 0) mentions = mentions.map(u => this.client.users.resolveId(u));
+    if (channels.length > 0) {
+      channels = channels
+        .map(c => this.client.channels.resolveId(c))
+        .filter(id => {
+          if (this.channel.guildId) {
+            const c = this.channel.guild.channels.cache.get(id);
+            if (!c || !c.messages) return false;
+            const perm = c.permissionsFor(this.client.user);
+            if (!perm.has('READ_MESSAGE_HISTORY') || !perm.has('VIEW_CHANNEL')) return false;
+            return true;
+          } else {
+            return true;
+          }
+        });
+    }
+    if (limit && limit > 25) throw new RangeError('MESSAGE_SEARCH_LIMIT');
     let stringQuery = [];
     const result = new Collection();
     let data;
-    if (author.length > 0) stringQuery.push(author.map(id => `author_id=${id}`).join('&'));
+    if (authors.length > 0) stringQuery.push(authors.map(id => `author_id=${id}`).join('&'));
     if (content && content.length) stringQuery.push(`content=${encodeURIComponent(content)}`);
     if (mentions.length > 0) stringQuery.push(mentions.map(id => `mentions=${id}`).join('&'));
     has = has.filter(v => ['link', 'embed', 'file', 'video', 'image', 'sound', 'sticker'].includes(v));
@@ -346,8 +354,18 @@ class MessageManager extends CachedManager {
     if (nsfw) stringQuery.push('include_nsfw=true');
     if (offset !== 0) stringQuery.push(`offset=${offset}`);
     if (limit !== 25) stringQuery.push(`limit=${limit}`);
-    if (this.channel.guildId && channelId.length > 0) {
-      stringQuery.push(channelId.map(id => `channel_id=${id}`).join('&'));
+    if (['timestamp', 'relevance'].includes(options.sortBy)) {
+      stringQuery.push(`sort_by=${options.sortBy}`);
+    } else {
+      stringQuery.push('sort_by=timestamp');
+    }
+    if (['asc', 'desc'].includes(options.sortOrder)) {
+      stringQuery.push(`sort_order=${options.sortOrder}`);
+    } else {
+      stringQuery.push('sort_order=desc');
+    }
+    if (this.channel.guildId && channels.length > 0) {
+      stringQuery.push(channels.map(id => `channel_id=${id}`).join('&'));
     }
     if (typeof pinned == 'boolean') stringQuery.push(`pinned=${pinned}`);
     // Main
@@ -363,6 +381,7 @@ class MessageManager extends CachedManager {
       stringQuery = stringQuery.filter(v => !v.startsWith('channel_id') && !v.startsWith('include_nsfw'));
       data = await this.client.api.channels[this.channel.id].messages[`search?${stringQuery.join('&')}`].get();
     }
+    console.log(stringQuery);
     for await (const message of data.messages) result.set(message[0].id, new Message(this.client, message[0]));
     return {
       messages: result,
